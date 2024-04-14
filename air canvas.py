@@ -7,20 +7,19 @@ class AirCanvas:
         self.cap = cv2.VideoCapture(0)
         self.cap.set(3, 1280)
         self.cap.set(4, 720)
-
+        self.track=False
         self.mp_hands = mp.solutions.hands
-        self.mp_face_detection = mp.solutions.face_detection
+        self.mp_face_detection = mp.solutions.face_detection 
         self.hands = self.mp_hands.Hands()
         self.face_detection = self.mp_face_detection.FaceDetection()
 
         self.canvas = np.zeros((720, 1280, 3), dtype=np.uint8)
-        self.marker_color = (0, 255, 0)
+        self.marker_color = (0, 0, 255)
         self.marker_radius = 10
         self.marker_thickness = 5
         self.marker_position = None
         self.drawing = False
         self.erasing = False
-
         self.last_position = None
 
     def draw_marker(self, frame, position):
@@ -57,6 +56,7 @@ class AirCanvas:
         cv2.namedWindow("Drawing", cv2.WINDOW_NORMAL)
 
         while True:
+            
             ret, frame = self.cap.read()
             if not ret:
                 break
@@ -65,6 +65,7 @@ class AirCanvas:
             rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
             # Detect hands
+            
             results_hands = self.hands.process(rgb_frame)
 
             if results_hands.multi_hand_landmarks:
@@ -74,38 +75,48 @@ class AirCanvas:
                     palm = hand_landmarks.landmark[0] if len(hand_landmarks.landmark) > 0 else None
 
                     if index_finger:
-                        self.marker_position = (int(index_finger.x * frame.shape[1]), int(index_finger.y * frame.shape[0]))
+                        # Calculate marker position
+                        marker_x = int(index_finger.x * frame.shape[1])
+                        marker_y = int(index_finger.y * frame.shape[0])
+                        self.marker_position = (marker_x, marker_y)
 
+                        # Determine drawing and erasing states based on finger positions
                         if middle_finger:
-                            if middle_finger.y < index_finger.y:
-                                self.drawing = False
-                            else:
-                                self.drawing = True
+                            self.drawing = middle_finger.y >= index_finger.y
                         else:
                             self.drawing = True
 
                         if palm:
-                            if palm.y < index_finger.y:
-                                self.erasing = True
-                            else:
-                                self.erasing = False
+                            self.erasing = palm.y < index_finger.y
+                        else:
+                            self.erasing=False
 
-            # Erase on canvas
-            if self.erasing:
-                self.erase_on_canvas(self.marker_position)
+                # Erase on canvasq
+                if self.erasing:
+                    self.erase_on_canvas(self.marker_position)
 
             # Draw on canvas
-            self.draw_on_canvas(self.marker_position)
-            paintWindow = np.zeros((471,636,3)) + 255
-            colors = [(255, 0, 0), (0, 255, 0), (0, 0, 255), (0,255,255)]
-            paintWindow = cv2.rectangle(paintWindow, (40,1), (140,65), (0,0,0), 2)
-            paintWindow = cv2.rectangle(paintWindow, (160,1), (255,65), colors[0], -1)
-            paintWindow = cv2.rectangle(paintWindow, (275,1), (370,65), colors[1], -1)
-            paintWindow = cv2.rectangle(paintWindow, (390,1), (485,65), colors[2], -1)
-            paintWindow = cv2.rectangle(paintWindow, (505,1), (600,65),colors[3],-1)
+            if(self.track==True):
+                self.draw_on_canvas(self.marker_position)
+            paintWindow = np.zeros((471, 636, 4), dtype=np.uint8)
+            paintWindow[:, :, 3] = 0  # Set the alpha channel to 0 (transparent)
+
+            colors = [(255, 0, 0, 255), (0, 255, 0, 255), (0, 0, 255, 255), (0, 255, 255, 255)]
+
+
+            paintWindow = cv2.rectangle(paintWindow, (40, 1), (140, 65), (0, 0, 0, 255), 2)
+            paintWindow = cv2.rectangle(paintWindow, (160, 1), (255, 65), colors[0], -1)
+            paintWindow = cv2.rectangle(paintWindow, (275, 1), (370, 65), colors[1], -1)
+            paintWindow = cv2.rectangle(paintWindow, (390, 1), (485, 65), colors[2], -1)
+            paintWindow = cv2.rectangle(paintWindow, (505, 1), (600, 65), colors[3], -1)
+
+
+            # cv2.imshow("Paint Window", paintWindow)
+            # cv2.waitKey(0)
+
 
             # Draw face detection
-            self.detect_face(frame)
+            # self.detect_face(frame)
 
             # Draw marker
             self.draw_marker(frame, self.marker_position)
@@ -124,6 +135,9 @@ class AirCanvas:
                 break
             elif key == ord("d"):
                 self.clear_canvas()
+            elif key==ord("t"):
+                self.track=not self.track
+                self.last_position=None
 
         self.cap.release()
         cv2.destroyAllWindows()
@@ -131,6 +145,3 @@ class AirCanvas:
 if __name__ == "__main__":
     air_canvas = AirCanvas()
     air_canvas.run()
-
-
-
