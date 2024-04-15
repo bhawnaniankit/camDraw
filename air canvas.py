@@ -100,24 +100,8 @@ class AirCanvas:
                 self.draw_on_canvas(self.marker_position)
             paintWindow = np.zeros((471, 636, 4), dtype=np.uint8)
             paintWindow[:, :, 3] = 0  # Set the alpha channel to 0 (transparent)
-
-            colors = [(255, 0, 0, 255), (0, 255, 0, 255), (0, 0, 255, 255), (0, 255, 255, 255)]
-
-
             paintWindow = cv2.rectangle(paintWindow, (40, 1), (140, 65), (0, 0, 0, 255), 2)
-            paintWindow = cv2.rectangle(paintWindow, (160, 1), (255, 65), colors[0], -1)
-            paintWindow = cv2.rectangle(paintWindow, (275, 1), (370, 65), colors[1], -1)
-            paintWindow = cv2.rectangle(paintWindow, (390, 1), (485, 65), colors[2], -1)
-            paintWindow = cv2.rectangle(paintWindow, (505, 1), (600, 65), colors[3], -1)
-
-
-            # cv2.imshow("Paint Window", paintWindow)
-            # cv2.waitKey(0)
-
-
-            # Draw face detection
-            # self.detect_face(frame)
-
+            
             # Draw marker
             self.draw_marker(frame, self.marker_position)
 
@@ -132,10 +116,15 @@ class AirCanvas:
 
             key = cv2.waitKey(1) & 0xFF
             if key == ord("q"):
+                cv2.imwrite('paint_window.jpg',paintWindow)
                 break
             elif key == ord("d"):
                 self.clear_canvas()
             elif key==ord("t"):
+                if self.marker_color == (255,0,0):
+                   self.marker_color=(0,0,255)
+                else:
+                    self.marker_color=(255,0,0)
                 self.track=not self.track
                 self.last_position=None
 
