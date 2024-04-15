@@ -19,7 +19,8 @@ handstrokes is an interactive drawing application that allows you to draw in the
 2. Install dependencies:
 
     ```bash
-    pip install -r requirements.txt
+    pip install opencv-python
+    pip install mediapipe
     ```
 
 ## Usage
